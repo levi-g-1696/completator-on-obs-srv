@@ -1,4 +1,6 @@
 # This is a sample Python script.
+import time
+
 from tools import execListOfUpdateReq,execSelectData,isIDinDBgridOnRDS,getMonListFromStationsTableOnVLD
 from tools import buildUpdateSqlReq,buildSelectSqlReq,makeTimeGridForID
 # Press Shift+F10 to execute it or replace it with your code.
@@ -35,9 +37,21 @@ def completatorMain():
         # get monitors values from vld sql
         req = buildSelectSqlReq(tab, id, monList)
         vldReq = buildSelectSqlReq(vldTab, id, monList)
-        statSel = execSelectData("VLD", vldStatREq)
-        slct = execSelectData("VLD", req)
-        vldSel = execSelectData("VLD", vldReq)
+        try:
+          statSel = execSelectData("VLD", vldStatREq)
+        except:
+          time.sleep(0.3)
+          statSel = execSelectData("VLD", vldStatREq)
+        try:
+          slct = execSelectData("VLD", req)
+        except:
+            time.sleep(0.3)
+            slct = execSelectData("VLD", req)
+        try:
+          vldSel = execSelectData("VLD", vldReq)
+        except:
+            time.sleep(0.3)
+            slct = execSelectData("VLD", req)
         valList = list(slct[0])
         vldValList = list(vldSel[0])
         # build update request and add to exec list

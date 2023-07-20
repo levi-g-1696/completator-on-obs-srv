@@ -32,6 +32,7 @@ def execSelectData(srv,req):
     return rows
 ##############################################
 def execListOfUpdateReq(srv,reqList):
+
     if str(srv).upper() == "VLD":
         s = "192.168.203.61,1433\\SQLEXPRESS"
         user = "agr"
@@ -207,7 +208,7 @@ def makeTimeGridForID(tabName,id):
 #  while (nextdate< enddate):
   nextid= id
 
-  if isIDinDBgridOnOBS(tabName,id):
+  if isIDinDBgridOnRDS(tabName,id):
       print("makeTimeGridForID says: id is already in grid.  Insert operation is not required")
 
     #  print(f"makeTimeGridToTables says: id {nextid} already in table {tabName} ")
