@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pyodbc
 
 
@@ -76,12 +78,22 @@ def execListOfUpdateReq(srv,reqList):
 
 
 ###########################################################################################
-def isIDinDBgridOnOBS(tabName,id):
-    cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
+def isIDinDBgridOnRDS(tabName,id):
+    '''cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
                               "Server=DESKTOP-5CJPAFM\\SQLEXPRESS;"
                               "Database=agr-dcontrol;"
-                              "Trusted_Connection=yes;")
+                              "Trusted_Connection=yes;")'''
+    server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
+    database = 'observationdb'
+    username = 'admin'
+    password = 'HjHtEpugt8esmznd07vZ'
 
+    # Create the connection string
+    cnxn = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};'
+                          f'SERVER={server};'
+                          f'DATABASE={database};'
+                          f'UID={username};'
+                          f'PWD={password}')
     cursor = cnxn.cursor()
     checkIfExistCom = f"select id from [{tabName}] where id= {id}"
     cursor.execute(checkIfExistCom)
@@ -141,7 +153,82 @@ def buildSelectSqlReq(tabname,id, monList):
     str = str + f" FROM [{tabname}] WHERE id={id}"
     return str
 
- ##########################################################
+ ###########################################################
+def getDateTimeByID(id):
+    #example id=231218045 > 2023-12-18 04:50:00
+    min = (id % 10) * 10
+    id_1 = id // 10
+    hour = (id_1 % 100)
+    id_2 = id_1 // 100
+    day = id_2 % 100
+    id_3 = id_2 // 100
+    month = id_3 % 100
+    id_4 = id_3 // 100
+    year = id_4 + 2000
+
+    dt = datetime(year, month, day, hour, min)
+    return dt
+ ################################################
+def makeTimeGridForID(tabName,id):
+  statusTable="VLDstat"
+  #lastTime = getLastTimeOfTab(tabName)
+
+  #dt = datetime.now()
+ # dt = fromDate
+  #delta10days= timedelta(days=daysNum)
+
+ # enddate= dt+delta10days
+
+  cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
+                        "Server=DESKTOP-5CJPAFM\\SQLEXPRESS;"
+                      "Database=agr-dcontrol;"
+                      "Trusted_Connection=yes;")
+
+  # Database connection settings
+  server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
+  database = 'observationdb'
+  username = 'admin'
+  password = 'HjHtEpugt8esmznd07vZ'
+
+  cnxn_aws = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};'
+                        f'SERVER={server};'
+                        f'DATABASE={database};'
+                        f'UID={username};'
+                        f'PWD={password}')
+
+  cursor = cnxn.cursor()
+  cursor_aws = cnxn_aws.cursor()
+  tabVLDname= tabName+"v"
+
+  nextdate= getDateTimeByID(id)
+  datastateDef=-10
+  sendstateDef=0
+  vldstateDef=0
+#  while (nextdate< enddate):
+  nextid= id
+
+  if isIDinDBgridOnOBS(tabName,id):
+      print("makeTimeGridForID says: id is already in grid.  Insert operation is not required")
+
+    #  print(f"makeTimeGridToTables says: id {nextid} already in table {tabName} ")
+
+  else :
+        dateStr = nextdate.strftime("%Y-%m-%dT%H:%M:%S")
+        com = f"INSERT INTO [{tabName}] (id,datetime) VALUES ({nextid},'{dateStr}')"
+        comVLD = f"INSERT INTO [{tabVLDname}] (id,datetime) VALUES ({nextid},'{dateStr}')"
+        comStatus = f"INSERT INTO [{statusTable}] (tableName,FK,datastate,vldstate,sendstate) VALUES ( '{tabName}',{nextid},{datastateDef},{vldstateDef},{sendstateDef})"
+        print(com)
+        cursor.execute(com)
+        cursor_aws.execute(com)
+        print("for aws:",com)
+        cursor.execute(comVLD)
+        cursor_aws.execute(comVLD)
+        print(comStatus)
+        cursor.execute(comStatus)
+        cursor_aws.execute(comStatus)
+
+        cursor.commit()
+        cursor_aws.commit()
 
 
 

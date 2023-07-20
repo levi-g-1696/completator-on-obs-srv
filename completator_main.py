@@ -1,5 +1,6 @@
 # This is a sample Python script.
-from tools import execListOfUpdateReq,execSelectData,isIDinDBgridOnOBS,getMonListFromStationsTableOnVLD,buildUpdateSqlReq,buildSelectSqlReq
+from tools import execListOfUpdateReq,execSelectData,isIDinDBgridOnRDS,getMonListFromStationsTableOnVLD
+from tools import buildUpdateSqlReq,buildSelectSqlReq,makeTimeGridForID
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
@@ -27,34 +28,35 @@ def completatorMain():
         tab = item[0]
         vldTab = tab + "v"
         id = item[1]
-        if isIDinDBgridOnOBS(tab, id):
-            vldStatREq = f"SELECT DataState,VldState from VLDstat where TableName='{tab}' AND FK= {id} "
-            monList = getMonListFromStationsTableOnVLD(tab)
-            #get monitors values from vld sql
-            req = buildSelectSqlReq(tab, id, monList)
-            vldReq = buildSelectSqlReq(vldTab, id, monList)
-            statSel = execSelectData("VLD", vldStatREq)
-            slct = execSelectData("VLD", req)
-            vldSel = execSelectData("VLD", vldReq)
-            valList = list(slct[0])
-            vldValList = list(vldSel[0])
-            #build update request and add to exec list
-            req = buildUpdateSqlReq(tab,id, monList, valList)
-            vldReq = buildUpdateSqlReq(vldTab,id, monList, vldValList)
-            updateListForOBS.append(req)
-            updateListForOBS.append(vldReq)
-            # _______________
-            dataStatVal = statSel[0][0]
-            vldStatVal = statSel[0][1]
-            statUpdateReq = f"UPDATE [dbo].[VLDstat]  SET [DataState]= {dataStatVal}, [vldState]= {vldStatVal} where [TableName]='{tab}' and [FK]= {id}"
-            updateListForOBS.append(statUpdateReq)
-            # ______________________
-            req = f"UPDATE [dbo].[VLDstat] SET [SendState] = 1 where TableName='{tab}' and FK={id}"
-            print(req)
-            updateListForVLD.append(req)
-        else:
-            cnErr = 1
-    execListOfUpdateReq("OBS", updateListForOBS)
+        if not isIDinDBgridOnRDS(tab, id): makeTimeGridForID(tab,id)
+
+        vldStatREq = f"SELECT DataState,VldState from VLDstat where TableName='{tab}' AND FK= {id} "
+        monList = getMonListFromStationsTableOnVLD(tab)
+        # get monitors values from vld sql
+        req = buildSelectSqlReq(tab, id, monList)
+        vldReq = buildSelectSqlReq(vldTab, id, monList)
+        statSel = execSelectData("VLD", vldStatREq)
+        slct = execSelectData("VLD", req)
+        vldSel = execSelectData("VLD", vldReq)
+        valList = list(slct[0])
+        vldValList = list(vldSel[0])
+        # build update request and add to exec list
+        req = buildUpdateSqlReq(tab, id, monList, valList)
+        vldReq = buildUpdateSqlReq(vldTab, id, monList, vldValList)
+        updateListForOBS.append(req)
+        updateListForOBS.append(vldReq)
+        # _______________
+        dataStatVal = statSel[0][0]
+        vldStatVal = statSel[0][1]
+        statUpdateReq = f"UPDATE [dbo].[VLDstat]  SET [DataState]= {dataStatVal}, [vldState]= {vldStatVal} where [TableName]='{tab}' and [FK]= {id}"
+        updateListForOBS.append(statUpdateReq)
+        # ______________________
+        req = f"UPDATE [dbo].[VLDstat] SET [SendState] = 1 where TableName='{tab}' and FK={id}"
+        print(req)
+        updateListForVLD.append(req)
+
+
+   # execListOfUpdateReq("OBS", updateListForOBS)
     execListOfUpdateReq("RDS", updateListForOBS)
     execListOfUpdateReq("VLD", updateListForVLD)
     print("OK:")
