@@ -170,7 +170,7 @@ def getDateTimeByID(id):
     dt = datetime(year, month, day, hour, min)
     return dt
  ################################################
-def makeTimeGridForID(tabName,id):
+def makeTimeGridForIDOnRDS(tabName, id):
   statusTable="VLDstat"
   #lastTime = getLastTimeOfTab(tabName)
 
@@ -214,18 +214,20 @@ def makeTimeGridForID(tabName,id):
     #  print(f"makeTimeGridToTables says: id {nextid} already in table {tabName} ")
 
   else :
+        print (f"makeTimeGridForIDOnRDS says: id {id} is NOT in grid . Making new entry.")
         dateStr = nextdate.strftime("%Y-%m-%dT%H:%M:%S")
         com = f"INSERT INTO [{tabName}] (id,datetime) VALUES ({nextid},'{dateStr}')"
         comVLD = f"INSERT INTO [{tabVLDname}] (id,datetime) VALUES ({nextid},'{dateStr}')"
         comStatus = f"INSERT INTO [{statusTable}] (tableName,FK,datastate,vldstate,sendstate) VALUES ( '{tabName}',{nextid},{datastateDef},{vldstateDef},{sendstateDef})"
+
         print(com)
-        cursor.execute(com)
+     #   cursor.execute(com)
         cursor_aws.execute(com)
         print("for aws:",com)
-        cursor.execute(comVLD)
+    #    cursor.execute(comVLD)
         cursor_aws.execute(comVLD)
         print(comStatus)
-        cursor.execute(comStatus)
+   #     cursor.execute(comStatus)
         cursor_aws.execute(comStatus)
 
         cursor.commit()

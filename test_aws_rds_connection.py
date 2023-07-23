@@ -23,7 +23,7 @@ try:
     cursor = conn.cursor()
 
     # Execute a sample query
-    cursor.execute('SELECT TOP 5 * FROM a3')
+    cursor.execute('SELECT TOP 5 * FROM a102 where monT >0 order by id desc')
 
     # Fetch and print the query results
     for row in cursor.fetchall():
