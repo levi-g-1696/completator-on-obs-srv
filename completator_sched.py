@@ -48,4 +48,4 @@ if __name__ == '__main__':
       dt= datetime.now()
       setLastRunTime()
       print(f"{dt}  completator is running.\n ")
-      time.sleep(5)
+      time.sleep(10)

@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 import pyodbc
@@ -27,8 +28,11 @@ def execSelectData(srv,req):
       cursor.execute(req)
       rows = cursor.fetchall()
     except pyodbc.OperationalError as msg:
-
-      print("Command skipped: ", msg)
+      time.sleep(0.3)
+      cursor.execute(req)
+      rows = cursor.fetchall()
+      print("lock error. sleep 0.3 . and try once more ", msg)
+    cnxn.close()
     return rows
 ##############################################
 def execListOfUpdateReq(srv,reqList):
@@ -49,8 +53,8 @@ def execListOfUpdateReq(srv,reqList):
         # Database connection settings
         server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
         database = 'observationdb'
-        username = 'admin'
-        password = 'HjHtEpugt8esmznd07vZ'
+        username = 'levi'
+        password = 'f43r3g244rr'
 
         # Create the connection string
         cnxn = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};'
@@ -61,21 +65,26 @@ def execListOfUpdateReq(srv,reqList):
     else:
         print("server name error (VLD/OBS):", srv)
         return [("server name error")]
-    cursor = cnxn.cursor()
+
+
     for req in reqList:
-            # This will skip and report errors
-            # For example, if the tables do not yet exist, this will skip over
-            # the DROP TABLE commands
-            try:
-                print("exequte sql query:\n", req)
-                if srv == "RDS":
-                    print("RDS insertion")
-                cursor.execute(req)
-                if srv == "RDS":
-                    print("RDS insertion Finish")
-            except pyodbc.OperationalError as msg:
-                print("Command skipped: ", msg)
-    cursor.commit()
+        cursor = cnxn.cursor()
+        # This will skip and report errors
+        # For example, if the tables do not yet exist, this will skip over
+        # the DROP TABLE commands
+        try:
+            print("exequte sql query:\n", req)
+            if srv == "RDS":
+                print("RDS insertion.")
+           # cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+            cursor.execute(req)
+            if srv == "RDS":
+                print("RDS insertion Finish")
+        except pyodbc.OperationalError as msg:
+            print("Command skipped: ", msg)
+        cursor.commit()
+        cursor.close()
+    cnxn.close()
 
 
 ###########################################################################################
@@ -86,8 +95,8 @@ def isIDinDBgridOnRDS(tabName,id):
                               "Trusted_Connection=yes;")'''
     server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
     database = 'observationdb'
-    username = 'admin'
-    password = 'HjHtEpugt8esmznd07vZ'
+    username = 'levi'
+    password = 'f43r3g244rr'
 
     # Create the connection string
     cnxn = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};'
@@ -96,17 +105,22 @@ def isIDinDBgridOnRDS(tabName,id):
                           f'UID={username};'
                           f'PWD={password}')
     cursor = cnxn.cursor()
-    checkIfExistCom = f"select id from [{tabName}] where id= {id}"
+    checkIfExistCom = f"select id from [{tabName}] where id = {id}"
     cursor.execute(checkIfExistCom)
 
     row = cursor.fetchone()
 
     if row == None or row[0] == None:
         print(f"id {id} for {tabName} is not in grid")
+        cursor.close()
+        cnxn.close()
         return False
     else:
         print(f"new id {id} for {tabName}  is in grid!!")
+        cursor.close()
+        cnxn.close()
         return True
+
 
     #################################################################
 def getMonListFromStationsTableOnVLD(tabName):
@@ -139,8 +153,10 @@ def buildUpdateSqlReq(tabname, id,monList, valList):
     st = st + monList[0] + "=" + str(valList[0])
     if len(monList) > 1:
         for i in range(1, len(monList)):
-            st = st + ", " + monList[i] + "=" + str(valList[i])
-    st= st + f" WHERE id={id}"
+            valStr=str(valList[i])
+            if  "NON" in valStr.upper(): valStr="-9999"
+            st = st + ", " + monList[i] + "=" + valStr
+    st= st + f" WHERE id = {id}"
     return st
 
 
@@ -151,7 +167,7 @@ def buildSelectSqlReq(tabname,id, monList):
     if len(monList) > 1:
         for i in range(1, len(monList)):
             str = str + ", " + monList[i]
-    str = str + f" FROM [{tabname}] WHERE id={id}"
+    str = str + f" FROM [{tabname}] WHERE id = {id}"
     return str
 
  ###########################################################
@@ -171,73 +187,86 @@ def getDateTimeByID(id):
     return dt
  ################################################
 def makeTimeGridForIDOnRDS(tabName, id):
-  statusTable="VLDstat"
-  #lastTime = getLastTimeOfTab(tabName)
+    statusTable="VLDstat"
+    #lastTime = getLastTimeOfTab(tabName)
 
-  #dt = datetime.now()
- # dt = fromDate
-  #delta10days= timedelta(days=daysNum)
+    #dt = datetime.now()
+    # dt = fromDate
+    #delta10days= timedelta(days=daysNum)
 
- # enddate= dt+delta10days
+    # enddate= dt+delta10days
+    '''
+    cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
+                          "Server=DESKTOP-5CJPAFM\\SQLEXPRESS;"
+                          "Database=agr-dcontrol;"
+                          "Trusted_Connection=yes;")
+    '''
+    # Database connection settings
+    server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
+    database = 'observationdb'
+    username = 'levi'
+    password = 'f43r3g244rr'
 
-  cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
-                        "Server=DESKTOP-5CJPAFM\\SQLEXPRESS;"
-                      "Database=agr-dcontrol;"
-                      "Trusted_Connection=yes;")
 
-  # Database connection settings
-  server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
-  database = 'observationdb'
-  username = 'admin'
-  password = 'HjHtEpugt8esmznd07vZ'
+    cnxn_aws = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};'
+                              f'SERVER={server};'
+                              f'DATABASE={database};'
+                              f'UID={username};'
+                              f'PWD={password}')
 
-  cnxn_aws = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};'
-                        f'SERVER={server};'
-                        f'DATABASE={database};'
-                        f'UID={username};'
-                        f'PWD={password}')
+  #  cursor = cnxn.cursor()
+    cursor_aws = cnxn_aws.cursor()
+    tabVLDname= tabName+"v"
 
-  cursor = cnxn.cursor()
-  cursor_aws = cnxn_aws.cursor()
-  tabVLDname= tabName+"v"
+    nextdate= getDateTimeByID(id)
+    datastateDef=-10
+    sendstateDef=0
+    vldstateDef=0
+    #  while (nextdate< enddate):
+    nextid= id
 
-  nextdate= getDateTimeByID(id)
-  datastateDef=-10
-  sendstateDef=0
-  vldstateDef=0
-#  while (nextdate< enddate):
-  nextid= id
-
-  if isIDinDBgridOnRDS(tabName,id):
-      print("makeTimeGridForID says: id is already in grid.  Insert operation is not required")
+    if isIDinDBgridOnRDS(tabName,id):
+        print("makeTimeGridForID says: id is already in grid.  Insert operation is not required")
 
     #  print(f"makeTimeGridToTables says: id {nextid} already in table {tabName} ")
 
-  else :
+    else :
         print (f"makeTimeGridForIDOnRDS says: id {id} is NOT in grid . Making new entry.")
         dateStr = nextdate.strftime("%Y-%m-%dT%H:%M:%S")
         com = f"INSERT INTO [{tabName}] (id,datetime) VALUES ({nextid},'{dateStr}')"
         comVLD = f"INSERT INTO [{tabVLDname}] (id,datetime) VALUES ({nextid},'{dateStr}')"
         comStatus = f"INSERT INTO [{statusTable}] (tableName,FK,datastate,vldstate,sendstate) VALUES ( '{tabName}',{nextid},{datastateDef},{vldstateDef},{sendstateDef})"
+        try:
+            print(com)
+            #   cursor.execute(com)
+            cursor_aws.execute(com)
+            cursor_aws.commit()
+            cursor_aws.close()
+            cursor_aws = cnxn_aws.cursor()
+            print("for aws com:",com)
+            #    cursor.execute(comVLD)
+            cursor_aws = cnxn_aws.cursor()
+            cursor_aws.execute(comVLD)
+            cursor_aws.commit()
+            cursor_aws.close()
+            print("for aws comVLD:", comVLD)
+            #     cursor.execute(comStatus)
+            print("try comStatus: ", comStatus)
+            cursor_aws = cnxn_aws.cursor()
+            cursor_aws.execute(comStatus)
+            cursor_aws.commit()
+            cursor_aws.close()
+            print("for aws com Status:",comStatus)
+            # cursor.commit()
 
-        print(com)
-     #   cursor.execute(com)
-        cursor_aws.execute(com)
-        print("for aws:",com)
-    #    cursor.execute(comVLD)
-        cursor_aws.execute(comVLD)
-        print(comStatus)
-   #     cursor.execute(comStatus)
-        cursor_aws.execute(comStatus)
+            print("aws Commit")
+        except Exception as e:
+            print(f"Error: {str(e)}")
+    #cnxn.close()
+    try:
 
-        cursor.commit()
-        cursor_aws.commit()
-
-
-
-
-
-
-
-
+        cnxn_aws.close()
+        print("Connection closed successfully.")
+    except Exception as e:
+        print(f"Error: {str(e)}")
 #***********************************************************************

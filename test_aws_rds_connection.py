@@ -11,8 +11,8 @@ for driver in drivers:
 # Database connection settings
 server = 'observationdb.cbq8ahnbfrlw.eu-north-1.rds.amazonaws.com'
 database = 'observationdb'
-username = 'admin'
-password = 'HjHtEpugt8esmznd07vZ'
+username = 'levi'
+password = 'f43r3g244rr'
 
 # Create the connection string
 cnxn = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
@@ -23,7 +23,7 @@ try:
     cursor = conn.cursor()
 
     # Execute a sample query
-    cursor.execute('SELECT TOP 5 * FROM a102 where monT >0 order by id desc')
+    cursor.execute('SELECT TOP 5 * FROM a3 order by id desc')
 
     # Fetch and print the query results
     for row in cursor.fetchall():

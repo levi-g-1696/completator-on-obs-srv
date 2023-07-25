@@ -20,6 +20,7 @@ def completatorMain():
           ,[VldState]   
       FROM [agr-dcontrol].[dbo].[VLDstat] where SendState=0 and VldState !=0 order by FK desc"""
     lst = execSelectData("vld", req)
+
     print(lst)
     cnOK = 0
     cnErr = 0
@@ -62,10 +63,10 @@ def completatorMain():
         # _______________
         dataStatVal = statSel[0][0]
         vldStatVal = statSel[0][1]
-        statUpdateReq = f"UPDATE [dbo].[VLDstat]  SET [DataState]= {dataStatVal}, [vldState]= {vldStatVal} where [TableName]='{tab}' and [FK]= {id}"
+        statUpdateReq = f"UPDATE [dbo].[VLDstat]  SET [DataState]= {dataStatVal}, [vldState]= {vldStatVal} where [TableName]='{tab}' and [FK] = {id}"
         updateListForOBS.append(statUpdateReq)
         # ______________________
-        req = f"UPDATE [dbo].[VLDstat] SET [SendState] = 1 where TableName='{tab}' and FK={id}"
+        req = f"UPDATE [dbo].[VLDstat] SET [SendState] = 1 where TableName='{tab}' and FK = {id}"
         print(req)
         updateListForVLD.append(req)
 
@@ -74,7 +75,7 @@ def completatorMain():
     try:
       execListOfUpdateReq("RDS", updateListForOBS)
     except :
-
+        time.sleep(0.3)
         execListOfUpdateReq("RDS", updateListForOBS)
     try:
       execListOfUpdateReq("VLD", updateListForVLD)
